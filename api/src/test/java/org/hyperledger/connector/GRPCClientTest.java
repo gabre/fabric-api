@@ -13,21 +13,18 @@
  */
 package org.hyperledger.connector;
 
-import org.hyperledger.account.BaseAccount;
-import org.hyperledger.account.BaseTransactionFactory;
-import org.hyperledger.account.KeyListChain;
-import org.hyperledger.account.TransactionFactory;
 import org.hyperledger.api.APITransaction;
 import org.hyperledger.api.BCSAPIException;
+import org.hyperledger.api.TransactionListener;
 import org.hyperledger.common.*;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GRPCClientTest {
@@ -57,23 +54,52 @@ public class GRPCClientTest {
     }
 
     @Test
+    public void sendAndGetTransaction() throws BCSAPIException, InterruptedException, HyperLedgerException {
+        Transaction tx = createAndSendTransaction();
+        APITransaction storedTx = client.getTransaction(tx.getID());
+        assertEquals(tx, storedTx);
+    }
+
+    @Test
     public void sendTransaction() throws HyperLedgerException, BCSAPIException, InterruptedException {
-        PrivateKey priv = PrivateKey.createNew();
-
-        Transaction tx = Transaction.create()
-                .inputs(TransactionInput.create().source(TID.INVALID, -1).build())
-                .outputs(TransactionOutput.create().payTo(priv.getAddress()).build())
-                .build();
-
         int originalHeight = client.getChainHeight();
-        client.sendTransaction(tx);
-
-        Thread.sleep(1500);
-
+        Transaction tx = createAndSendTransaction();
         APITransaction res = client.getTransaction(tx.getID());
         assertEquals(tx, res);
         int newHeight = client.getChainHeight();
         assertTrue(newHeight == originalHeight + 1);
+    }
+
+    @Test
+    public void registerAndUnregisterTransactionListener() throws BCSAPIException, InterruptedException, HyperLedgerException {
+        // it cannot be a lambda, because Mockito cannot handle that
+        TransactionListener backingListener = new TransactionListener() {
+            @Override
+            public void process(APITransaction t) throws HyperLedgerException {
+            }
+
+        };
+        TransactionListener mockListener = Mockito.spy(backingListener);
+        client.registerTransactionListener(mockListener);
+
+        createAndSendTransaction();
+        Mockito.verify(mockListener, Mockito.times(1)).process(Mockito.any(APITransaction.class));
+
+        client.removeTransactionListener(mockListener);
+        createAndSendTransaction();
+        // expect no additional invocations
+        Mockito.verify(mockListener, Mockito.times(1)).process(Mockito.any(APITransaction.class));
+    }
+
+    private Transaction createAndSendTransaction() throws HyperLedgerException, BCSAPIException, InterruptedException {
+        PrivateKey priv = PrivateKey.createNew();
+        Transaction tx = Transaction.create()
+                .inputs(TransactionInput.create().source(TID.INVALID, -1).build())
+                .outputs(TransactionOutput.create().payTo(priv.getAddress()).build())
+                .build();
+        client.sendTransaction(tx);
+        Thread.sleep(1500);
+        return tx;
     }
 
 
