@@ -39,7 +39,7 @@ public class GRPCClientTest {
 
 
     @Test
-    public void testGetBlockHeight() throws BCSAPIException {
+    public void getBlockHeight() throws BCSAPIException {
         int height = client.getChainHeight();
 
         log.debug("testGetBlockHeight height=" + height);
