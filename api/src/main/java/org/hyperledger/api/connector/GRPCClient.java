@@ -47,7 +47,7 @@ import protos.Api.BlockCount;
 public class GRPCClient implements HLAPI {
     private static final Logger log = LoggerFactory.getLogger(GRPCClient.class);
 
-    final String chaincodeName = "noop";
+    final String chaincodeName = "noop_syscc";
 
 
     private DevopsBlockingStub dbs;
