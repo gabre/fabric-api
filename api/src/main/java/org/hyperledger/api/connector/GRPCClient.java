@@ -65,14 +65,18 @@ public class GRPCClient implements HLAPI {
         observer.connect();
     }
 
-    public void invoke(String chaincodeName, byte[] transaction) {
-        String encodedTransaction = Base64.getEncoder().encodeToString(transaction);
+    public void invoke(String chaincodeName, Transaction transaction) {
+        invoke(chaincodeName, "execute", transaction);
+    }
+
+    public void invoke(String chaincodeName, String functionName, Transaction transaction) {
+        String encodedTransaction = Base64.getEncoder().encodeToString(transaction.getPayload());
 
         ChaincodeID.Builder chaincodeId = ChaincodeID.newBuilder();
         chaincodeId.setName(chaincodeName);
 
         ChaincodeInput.Builder chaincodeInput = ChaincodeInput.newBuilder();
-        chaincodeInput.setFunction("execute");
+        chaincodeInput.setFunction(functionName);
         chaincodeInput.addArgs(encodedTransaction);
 
         ChaincodeSpec.Builder chaincodeSpec = ChaincodeSpec.newBuilder();
@@ -80,7 +84,7 @@ public class GRPCClient implements HLAPI {
         chaincodeSpec.setCtorMsg(chaincodeInput);
 
         ChaincodeInvocationSpec.Builder chaincodeInvocationSpec = ChaincodeInvocationSpec.newBuilder();
-        chaincodeInvocationSpec.setChaincodeSpec(chaincodeSpec);
+        chaincodeInvocationSpec.setChaincodeSpec(chaincodeSpec).setUuidGenerationAlg("sha256base64");
 
         dbs.invoke(chaincodeInvocationSpec.build());
     }
@@ -153,8 +157,7 @@ public class GRPCClient implements HLAPI {
 
     @Override
     public HLAPITransaction getTransaction(TID hash) throws HLAPIException {
-        String hexedHash = ByteUtils.toHex(hash.toByteArray());
-        ByteString result = query("getTran", Collections.singletonList(hexedHash));
+        ByteString result = query("getTran", Collections.singletonList(hash.toUuidString().toLowerCase()));
         byte[] resultStr = result.toByteArray();
         if (resultStr.length == 0) return null;
         Transaction t = new Transaction(resultStr);
@@ -164,17 +167,17 @@ public class GRPCClient implements HLAPI {
 
     @Override
     public void sendTransaction(Transaction transaction) throws HLAPIException {
-        invoke(chaincodeName, transaction.getPayload());
+        invoke(chaincodeName, transaction);
     }
 
     @Override
     public void registerRejectListener(RejectListener rejectListener) throws HLAPIException {
-        throw new UnsupportedOperationException();
+        observer.subscribeToRejections(rejectListener);
     }
 
     @Override
     public void removeRejectListener(RejectListener rejectListener) {
-        throw new UnsupportedOperationException();
+        observer.unsubscribeFromRejections(rejectListener);
     }
 
 
@@ -185,22 +188,22 @@ public class GRPCClient implements HLAPI {
 
     @Override
     public void registerTransactionListener(TransactionListener listener) throws HLAPIException {
-        observer.subscribe(listener);
+        observer.subscribeToTransactions(listener);
     }
 
     @Override
     public void removeTransactionListener(TransactionListener listener) {
-        observer.unsubscribe(listener);
+        observer.unsubscribeFromTransactions(listener);
     }
 
     @Override
     public void registerTrunkListener(TrunkListener listener) throws HLAPIException {
-        throw new UnsupportedOperationException();
+       observer.subscribeToBlocks(listener);
     }
 
     @Override
     public void removeTrunkListener(TrunkListener listener) {
-        throw new UnsupportedOperationException();
+        observer.unsubscribeFromBlocks(listener);
     }
 
     @Override
