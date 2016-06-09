@@ -32,6 +32,8 @@ import io.grpc.StatusRuntimeException;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.hamcrest.CoreMatchers;
@@ -106,7 +108,7 @@ public class GRPCClientTest {
         client.sendTransaction(tx2);
         client.invoke(client.chaincodeName, "some-fake-function-name", tx3);
 
-        byte expectedTxCount = 2;
+        byte expectedTxCount = 3;
         byte counter = 3;
         while(counter != 0 && expectedTxCount != listener.getProcessedTxCount())
         {
@@ -165,6 +167,7 @@ public class GRPCClientTest {
         Transaction tx2 = new Transaction(new byte[90]);
         class TestListener implements RejectListener {
             private byte processedRejectionCount = 0;
+            List<Hash> rejectedTXs = Collections.synchronizedList(new ArrayList<Hash>(5));
 
             public byte getProcessedTxCount() {
                 return processedRejectionCount;
@@ -173,6 +176,7 @@ public class GRPCClientTest {
             @Override
             public void rejected(String command, Hash hash, String reason, int rejectionCode) {
                 processedRejectionCount++;
+                rejectedTXs.add(hash);
             }
         };
         TestListener listener = new TestListener();
@@ -185,11 +189,12 @@ public class GRPCClientTest {
         byte counter = 3;
         while(counter != 0 && expectedTxCount != listener.getProcessedTxCount())
         {
-          Thread.sleep(1000);
-          counter--;
+            Thread.sleep(1000);
+            counter--;
         }
         client.removeRejectListener(listener);
         assertEquals(expectedTxCount, listener.getProcessedTxCount());
+        assertTrue(((Hash)listener.rejectedTXs.get(0)).equalsAsUuidString(tx1.getID()));
     }
 
 }
