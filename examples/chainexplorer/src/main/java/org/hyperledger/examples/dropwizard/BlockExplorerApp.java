@@ -15,31 +15,23 @@ package org.hyperledger.examples.dropwizard;
 
 import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
 import io.dropwizard.Application;
+import io.dropwizard.Bundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.hyperledger.api.BCSAPI;
-import org.hyperledger.dropwizard.HyperLedgerBundle;
-import org.hyperledger.dropwizard.HyperLedgerConfiguration;
+import org.hyperledger.api.HLAPI;
+import org.hyperledger.connector.GRPCClient;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
-import java.security.Security;
 import java.util.EnumSet;
 
 /**
  *
  */
 public class BlockExplorerApp extends Application<BlockExplorerConfiguration> {
-
-    static {
-        Security.addProvider(new BouncyCastleProvider());
-    }
-
-    private HyperLedgerBundle<BlockExplorerConfiguration> hyperLedgerBundle;
 
     public static void main(String[] args) throws Exception {
         new BlockExplorerApp().run(args);
@@ -52,20 +44,13 @@ public class BlockExplorerApp extends Application<BlockExplorerConfiguration> {
                         new EnvironmentVariableSubstitutor()
                 )
         );
-        hyperLedgerBundle = new HyperLedgerBundle<BlockExplorerConfiguration>() {
-            @Override
-            protected HyperLedgerConfiguration getSupernodeConfiguration(BlockExplorerConfiguration configuration) {
-                return configuration.getHyperLedger();
-//                return configuration.getGRPCConnectedHyperLedger();
-            }
-        };
-        bootstrap.addBundle(hyperLedgerBundle);
         bootstrap.getObjectMapper().registerModule(new JSR310Module());
     }
 
     @Override
     public void run(BlockExplorerConfiguration configuration, Environment environment) throws Exception {
-        BCSAPI api = hyperLedgerBundle.getBCSAPI();
+        // TODO get this from config
+        HLAPI api = new GRPCClient(configuration.getHost(), configuration.getPort(), configuration.getObserverPort());
         final FilterRegistration.Dynamic cors =
                 environment.servlets().addFilter("CORS", CrossOriginFilter.class);
 

@@ -13,85 +13,52 @@
  */
 package org.hyperledger.examples.dropwizard;
 
-import org.hyperledger.api.APITransaction;
-import org.hyperledger.api.BCSAPI;
-import org.hyperledger.api.BCSAPIException;
+import org.hyperledger.api.HLAPIBlock;
+import org.hyperledger.api.HLAPITransaction;
+import org.hyperledger.api.HLAPI;
+import org.hyperledger.api.HLAPIException;
 import org.hyperledger.common.BID;
-import org.hyperledger.common.HyperLedgerException;
 import org.hyperledger.common.TID;
-import org.hyperledger.common.TransactionOutput;
-import org.hyperledger.common.color.ColoredTransactionOutput;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
-import java.util.List;
 
 @Path("/explorer")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class ExplorerResource {
 
-    private final BCSAPI api;
+    private final HLAPI api;
 
-    public ExplorerResource(BCSAPI api) {
+    public ExplorerResource(HLAPI api) {
         this.api = api;
     }
 
     @GET
     @Path("block/{blockId}")
-    public BlockRepresentation latestBlocks(@PathParam("blockId") BID blockId) throws BCSAPIException {
-        return BlockRepresentation.create(api.getBlock(blockId));
+    public BlockRepresentation latestBlocks(@PathParam("blockId") String blockId) throws HLAPIException {
+        BID bid = new BID(blockId);
+        return BlockRepresentation.create(api.getBlock(bid));
     }
 
     @GET
     @Path("tx/{txId}")
-    public TransactionRepresentation getTx(@PathParam("txId") TID txId) throws BCSAPIException, HyperLedgerException {
-        APITransaction tx = api.getTransaction(txId);
-
-        List<APITransaction> inputTxs = api.getInputTransactions(txId);
-        List<String> inputAddresses = new ArrayList<>(inputTxs == null ? 0 : inputTxs.size());
-        List<String> color = new ArrayList<>(inputTxs == null ? 0 : inputTxs.size());
-        List<Long> quantity = new ArrayList<>(inputTxs == null ? 0 : inputTxs.size());
-        if (inputTxs != null) {
-            int i = 0;
-            for (APITransaction inputTx : inputTxs) {
-                if (inputTx == null) {
-                    inputAddresses.add("");
-                    color.add("");
-                    quantity.add(-1L);
-                } else {
-                    TransactionOutput output = inputTx.getOutput(tx.getSource(i).getOutputIndex());
-                    if (output.getOutputAddress() != null) {
-                        inputAddresses.add(output.getOutputAddress().toString());
-                        if (output instanceof ColoredTransactionOutput) {
-                            color.add(((ColoredTransactionOutput) output).getColor().toString());
-                            quantity.add(((ColoredTransactionOutput) output).getQuantity());
-                        } else {
-                            color.add("");
-                            quantity.add(-1L);
-                        }
-                    } else {
-                        inputAddresses.add("");
-                        color.add("");
-                        quantity.add(-1L);
-                    }
-                }
-                i++;
-            }
-        }
-        return TransactionRepresentation.create(tx, inputAddresses, color, quantity);
+    public TransactionRepresentation getTx(@PathParam("txId") String txId) throws HLAPIException {
+        TID tid = null;
+        System.out.println("HERE WE ARE");
+        HLAPITransaction tx = api.getTransaction(tid);
+        return TransactionRepresentation.create(tx);
     }
 
     @GET
     @Path("chain/height")
-    public ChainHeightRepresentation getChainHeight() throws BCSAPIException {
+    public ChainHeightRepresentation getChainHeight() throws HLAPIException {
         return ChainHeightRepresentation.create(api.getChainHeight());
     }
 
     @GET
     @Path("chain/blockids")
-    public BlockIdsRepresentation getBlockIds(@DefaultValue("top") @QueryParam("blockId") String blockId, @DefaultValue("20") @QueryParam("count") int count) throws BCSAPIException {
+    public BlockIdsRepresentation getBlockIds(@DefaultValue("top") @QueryParam("blockId") String blockId, @DefaultValue("20") @QueryParam("count") int count) throws HLAPIException {
         BID hash;
         if ("top".equals(blockId)) {
             hash = null;
@@ -99,10 +66,12 @@ public class ExplorerResource {
             try {
                 hash = new BID(blockId);
             } catch (IllegalArgumentException e) {
-                throw new BCSAPIException(e.getMessage());
+                throw new HLAPIException(e.getMessage());
             }
         }
-        return BlockIdsRepresentation.create(api.getBlockIds(hash, count));
+        // TODO this should be able to query for N blocks from a hash
+        HLAPIBlock block = api.getBlock(hash);
+        return BlockIdsRepresentation.create(block.getID(), block.getHeight(), block.getPreviousID());
     }
 
 

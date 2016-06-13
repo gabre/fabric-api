@@ -14,7 +14,7 @@
 package org.hyperledger.examples.dropwizard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.hyperledger.api.APIBlock;
+import org.hyperledger.api.HLAPIBlock;
 import org.hyperledger.common.BID;
 import org.hyperledger.common.Hash;
 import org.hyperledger.common.TID;
@@ -25,16 +25,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class BlockRepresentation {
-    public static BlockRepresentation create(APIBlock block) {
+    public static BlockRepresentation create(HLAPIBlock block) {
         return new BlockRepresentation(
                 block.getID(),
                 block.getPreviousID(),
                 block.getHeight(),
                 block.getLocalCreateTime(),
-                block.getNonce(),
-                block.getVersion(),
                 block.getMerkleRoot(),
-                block.getDifficultyTarget(),
                 block.getTransactions().stream().map(Transaction::getID).collect(Collectors.toList())
         );
     }
@@ -46,15 +43,9 @@ public class BlockRepresentation {
     @JsonProperty
     private final LocalTime localCreateTime;
     @JsonProperty
-    private final int nonce;
-    @JsonProperty
     private final int height;
     @JsonProperty
-    private final int version;
-    @JsonProperty
     private final Hash merkleRoot;
-    @JsonProperty
-    private final int difficultyTarget;
     @JsonProperty
     private final List<TID> transactions;
 
@@ -62,19 +53,13 @@ public class BlockRepresentation {
                                BID previousID,
                                int height,
                                LocalTime localCreateTime,
-                               int nonce,
-                               int version,
                                Hash merkleRoot,
-                               int difficultyTarget,
                                List<TID> transactions) {
         this.id = id;
         this.previousID = previousID;
         this.height = height;
         this.localCreateTime = localCreateTime;
-        this.nonce = nonce;
-        this.version = version;
         this.merkleRoot = merkleRoot;
-        this.difficultyTarget = difficultyTarget;
         this.transactions = transactions;
     }
 }

@@ -14,25 +14,25 @@
 package org.hyperledger.examples.dropwizard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.hyperledger.api.APIBlockIdList;
 import org.hyperledger.common.BID;
 
 import java.util.List;
 
 public class BlockIdsRepresentation {
-    public static BlockIdsRepresentation create(APIBlockIdList blockIdList) {
-        return new BlockIdsRepresentation(blockIdList.idList, blockIdList.height, blockIdList.previousBlockId);
+    // TODO this should be able to get a blockIDList as parameter
+    public static BlockIdsRepresentation create(BID blockID, int height, BID previousBlockId) {
+        return new BlockIdsRepresentation(blockID, height, previousBlockId);
     }
 
     @JsonProperty
-    private final List<BID> blockIds;
+    private final BID blockId;
     @JsonProperty
     private final int height;
     @JsonProperty
     private final BID previousBlockId;
 
-    public BlockIdsRepresentation(List<BID> blockIds, int height, BID previousBlockId) {
-        this.blockIds = blockIds;
+    public BlockIdsRepresentation(BID blockId, int height, BID previousBlockId) {
+        this.blockId = blockId;
         this.height = height;
         this.previousBlockId = previousBlockId;
     }

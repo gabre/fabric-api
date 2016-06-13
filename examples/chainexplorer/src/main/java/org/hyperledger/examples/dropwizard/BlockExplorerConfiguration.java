@@ -15,9 +15,9 @@ package org.hyperledger.examples.dropwizard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
-import org.hyperledger.dropwizard.EmbeddedHyperLedger;
-import org.hyperledger.dropwizard.HyperLedgerConfiguration;
-import org.hyperledger.org.hyperledger.fabric.GRPCConnectedHyperLedger;
+import org.apache.commons.lang3.NotImplementedException;
+// import org.hyperledger.dropwizard.EmbeddedHyperLedger;
+// import org.hyperledger.dropwizard.HyperLedgerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,22 +26,25 @@ import org.slf4j.LoggerFactory;
  */
 public class BlockExplorerConfiguration extends Configuration {
     private static final Logger log = LoggerFactory.getLogger(BlockExplorerConfiguration.class);
-    
-    @JsonProperty
-    private EmbeddedHyperLedger hyperLedger;
-    
-    @JsonProperty
-    private String type;
-    
-    @JsonProperty
-    private GRPCConnectedHyperLedger gRPCConnectedHyperLedger;
 
-    public HyperLedgerConfiguration getHyperLedger() {
-    	if("grpc".equalsIgnoreCase(type)) {
-            return gRPCConnectedHyperLedger;
-    	}
-    	else {
-            return hyperLedger;
-    	}
+    @JsonProperty
+    private String host = "localhost";
+
+    @JsonProperty
+    private int port = 30303;
+
+    @JsonProperty
+    private int observerPort = 31315;
+
+    public String getHost() {
+        return host;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public int getObserverPort() {
+        return observerPort;
     }
 }
