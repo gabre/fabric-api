@@ -15,9 +15,6 @@ package org.hyperledger.examples.dropwizard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
-import org.apache.commons.lang3.NotImplementedException;
-// import org.hyperledger.dropwizard.EmbeddedHyperLedger;
-// import org.hyperledger.dropwizard.HyperLedgerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

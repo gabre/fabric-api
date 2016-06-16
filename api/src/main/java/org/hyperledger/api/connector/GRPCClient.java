@@ -14,10 +14,6 @@
 
 package org.hyperledger.api.connector;
 
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
-
 import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NegotiationType;
@@ -25,29 +21,30 @@ import io.grpc.netty.NettyChannelBuilder;
 import org.hyperledger.api.*;
 import org.hyperledger.block.BID;
 import org.hyperledger.block.Block;
-import org.hyperledger.common.*;
+import org.hyperledger.block.HyperledgerHeader;
+import org.hyperledger.merkletree.MerkleRoot;
 import org.hyperledger.transaction.TID;
 import org.hyperledger.transaction.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import protos.Chaincode;
+import protos.*;
+import protos.Api.BlockCount;
 import protos.Chaincode.ChaincodeID;
 import protos.Chaincode.ChaincodeInput;
 import protos.Chaincode.ChaincodeInvocationSpec;
 import protos.Chaincode.ChaincodeSpec;
-import protos.DevopsGrpc;
 import protos.DevopsGrpc.DevopsBlockingStub;
-
-import protos.Fabric;
-import protos.OpenchainGrpc;
 import protos.OpenchainGrpc.OpenchainBlockingStub;
-import protos.Api.BlockCount;
+
+import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class GRPCClient implements HLAPI {
     private static final Logger log = LoggerFactory.getLogger(GRPCClient.class);
 
-    final String chaincodeName = "noop_syscc";
+    final String chaincodeName = "noop";
 
 
     private DevopsBlockingStub dbs;
@@ -151,8 +148,23 @@ public class GRPCClient implements HLAPI {
     }
 
     @Override
-    public HLAPIBlock getBlock(BID hash) throws HLAPIException {
-        throw new UnsupportedOperationException();
+    public HLAPIBlock getBlock(long blockNum) throws HLAPIException {
+        Api.BlockNumber bn = Api.BlockNumber.newBuilder().setNumber(blockNum).build();
+        Fabric.Block fblock = obs.getBlockByNumber(bn);
+        byte[] bidBytes = fblock.getPreviousBlockHash().toByteArray();
+        BID prevBID;
+        if (bidBytes.length > 0) {
+            prevBID = new BID(bidBytes);
+        } else {
+            prevBID = BID.INVALID;
+        }
+        long seconds = fblock.getTimestamp().getSeconds();
+        HyperledgerHeader hlheader = new HyperledgerHeader(prevBID, MerkleRoot.INVALID, seconds);
+        HLAPIHeader hlapiheader = new HLAPIHeader(hlheader, blockNum + 1);
+        List<Transaction> txs = fblock.getTransactionsList().stream()
+                                         .map(ftx -> new Transaction(ftx.getPayload().toByteArray()))
+                                         .collect(Collectors.toList());
+        return new HLAPIBlock(hlapiheader, txs);
     }
 
     @Override
@@ -161,7 +173,7 @@ public class GRPCClient implements HLAPI {
         byte[] resultStr = result.toByteArray();
         if (resultStr.length == 0) return null;
         Transaction t = new Transaction(resultStr);
-        if (!hash.equals(t.getID())) return null;
+        if (!hash.equalsAsUuidString(t.getID())) return null;
         return new HLAPITransaction(new Transaction(resultStr), BID.INVALID);
     }
 

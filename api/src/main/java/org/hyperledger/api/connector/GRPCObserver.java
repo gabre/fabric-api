@@ -16,34 +16,27 @@ package org.hyperledger.api.connector;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-
 import io.grpc.Channel;
 import io.grpc.stub.StreamObserver;
-
 import org.hyperledger.api.HLAPIBlock;
 import org.hyperledger.api.HLAPIException;
 import org.hyperledger.api.HLAPITransaction;
 import org.hyperledger.api.RejectListener;
 import org.hyperledger.api.TransactionListener;
 import org.hyperledger.block.BID;
+import org.hyperledger.transaction.TID;
 import org.hyperledger.transaction.Transaction;
 import org.hyperledger.api.TrunkListener;
 import protos.Chaincode;
 import protos.EventsGrpc;
 import protos.EventsOuterClass;
 import protos.EventsOuterClass.Rejection;
-import protos.Fabric.Block;
-import protos.Fabric.TransactionResult;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 
 public class GRPCObserver {
     private EventsGrpc.EventsStub es;
@@ -133,12 +126,10 @@ public class GRPCObserver {
         StreamObserver<EventsOuterClass.Event> sender = es.chat(receiver);
 
         EventsOuterClass.Interest interestB = EventsOuterClass.Interest.newBuilder()
-                .setEventType("block")
-                .setResponseType(EventsOuterClass.Interest.ResponseType.PROTOBUF)
+                .setEventType(EventsOuterClass.EventType.BLOCK)
                 .build();
         EventsOuterClass.Interest interestR = EventsOuterClass.Interest.newBuilder()
-                .setEventType("rejection")
-                .setResponseType(EventsOuterClass.Interest.ResponseType.PROTOBUF)
+                .setEventType(EventsOuterClass.EventType.REJECTION)
                 .build();
 
         EventsOuterClass.Register register = EventsOuterClass.Register.newBuilder()

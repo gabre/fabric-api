@@ -15,25 +15,19 @@ package org.hyperledger.examples.dropwizard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hyperledger.api.HLAPITransaction;
-import org.hyperledger.common.BID;
-import org.hyperledger.common.TID;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  *
  */
 public class TransactionRepresentation {
     @JsonProperty
-    private final TID id;
+    private final String id;
     @JsonProperty
-    private final BID blockID;
+    private final String blockID;
     @JsonProperty
     private final byte[] payload;
 
-    public TransactionRepresentation(TID id, BID blockID, byte[] payload) {
+    public TransactionRepresentation(String id, String blockID, byte[] payload) {
 
         this.id = id;
         this.blockID = blockID;
@@ -42,8 +36,8 @@ public class TransactionRepresentation {
 
     public static TransactionRepresentation create(HLAPITransaction tx) {
         return new TransactionRepresentation(
-                tx.getID(),
-                tx.getBlockID(),
+                tx.getID().toUuidString(),
+                tx.getBlockID().toUuidString(),
                 tx.getPayload()
         );
     }

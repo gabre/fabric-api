@@ -25,7 +25,7 @@ public interface Header {
     MerkleRoot getMerkleRoot();
 
     @Deprecated
-    int getCreateTime();
+    long getCreateTime();
 
     LocalTime getLocalCreateTime();
 }

@@ -88,7 +88,7 @@ public class HLAPIBlock extends Block {
         }
     }
 
-    public int getHeight() {
+    public long getHeight() {
         return getHeader().getHeight();
     }
 

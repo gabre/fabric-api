@@ -15,10 +15,6 @@ package org.hyperledger.examples.dropwizard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hyperledger.api.HLAPIBlock;
-import org.hyperledger.common.BID;
-import org.hyperledger.common.Hash;
-import org.hyperledger.common.TID;
-import org.hyperledger.common.Transaction;
 
 import java.time.LocalTime;
 import java.util.List;
@@ -27,34 +23,34 @@ import java.util.stream.Collectors;
 public class BlockRepresentation {
     public static BlockRepresentation create(HLAPIBlock block) {
         return new BlockRepresentation(
-                block.getID(),
-                block.getPreviousID(),
+                block.getID().toUuidString(),
+                block.getPreviousID().toUuidString(),
                 block.getHeight(),
                 block.getLocalCreateTime(),
-                block.getMerkleRoot(),
-                block.getTransactions().stream().map(Transaction::getID).collect(Collectors.toList())
+                block.getMerkleRoot().toString(),
+                block.getTransactions().stream().map(tx -> tx.getID().toUuidString()).collect(Collectors.toList())
         );
     }
 
     @JsonProperty
-    private final BID id;
+    private final String id;
     @JsonProperty
-    private final BID previousID;
+    private final String previousID;
     @JsonProperty
     private final LocalTime localCreateTime;
     @JsonProperty
-    private final int height;
+    private final long height;
     @JsonProperty
-    private final Hash merkleRoot;
+    private final String merkleRoot;
     @JsonProperty
-    private final List<TID> transactions;
+    private final List<String> transactions;
 
-    public BlockRepresentation(BID id,
-                               BID previousID,
-                               int height,
+    public BlockRepresentation(String id,
+                               String previousID,
+                               long height,
                                LocalTime localCreateTime,
-                               Hash merkleRoot,
-                               List<TID> transactions) {
+                               String merkleRoot,
+                               List<String> transactions) {
         this.id = id;
         this.previousID = previousID;
         this.height = height;

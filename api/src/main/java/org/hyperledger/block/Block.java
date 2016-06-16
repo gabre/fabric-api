@@ -157,7 +157,7 @@ public class Block {
      * @return the time point the block was created. This is seconds in the Unix era.
      */
     @Deprecated
-    public int getCreateTime() {
+    public long getCreateTime() {
         return header.getCreateTime();
     }
 

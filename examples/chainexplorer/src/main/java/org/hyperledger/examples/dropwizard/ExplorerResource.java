@@ -13,12 +13,12 @@
  */
 package org.hyperledger.examples.dropwizard;
 
-import org.hyperledger.api.HLAPIBlock;
-import org.hyperledger.api.HLAPITransaction;
 import org.hyperledger.api.HLAPI;
+import org.hyperledger.api.HLAPIBlock;
 import org.hyperledger.api.HLAPIException;
-import org.hyperledger.common.BID;
-import org.hyperledger.common.TID;
+import org.hyperledger.api.HLAPITransaction;
+import org.hyperledger.common.Hash;
+import org.hyperledger.transaction.TID;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -35,18 +35,27 @@ public class ExplorerResource {
     }
 
     @GET
-    @Path("block/{blockId}")
-    public BlockRepresentation latestBlocks(@PathParam("blockId") String blockId) throws HLAPIException {
-        BID bid = new BID(blockId);
-        return BlockRepresentation.create(api.getBlock(bid));
+    @Path("block/{blockNum}")
+    public BlockRepresentation latestBlocks(@PathParam("blockNum") String blockNumStr) throws HLAPIException {
+        long blockNum;
+        if ("top".equals(blockNumStr)) {
+            blockNum = api.getChainHeight() - 1;
+        } else {
+            try {
+                blockNum = Long.parseLong(blockNumStr);
+            } catch (IllegalArgumentException e) {
+                throw new HLAPIException(e.getMessage());
+            }
+        }
+        HLAPIBlock block = api.getBlock(blockNum);
+        return BlockRepresentation.create(block);
     }
 
     @GET
     @Path("tx/{txId}")
-    public TransactionRepresentation getTx(@PathParam("txId") String txId) throws HLAPIException {
-        TID tid = null;
-        System.out.println("HERE WE ARE");
-        HLAPITransaction tx = api.getTransaction(tid);
+    public TransactionRepresentation getTx(@PathParam("txId") String txIdStr) throws HLAPIException {
+        TID txid = new TID(Hash.fromUuidString(txIdStr));
+        HLAPITransaction tx = api.getTransaction(txid);
         return TransactionRepresentation.create(tx);
     }
 
@@ -55,24 +64,4 @@ public class ExplorerResource {
     public ChainHeightRepresentation getChainHeight() throws HLAPIException {
         return ChainHeightRepresentation.create(api.getChainHeight());
     }
-
-    @GET
-    @Path("chain/blockids")
-    public BlockIdsRepresentation getBlockIds(@DefaultValue("top") @QueryParam("blockId") String blockId, @DefaultValue("20") @QueryParam("count") int count) throws HLAPIException {
-        BID hash;
-        if ("top".equals(blockId)) {
-            hash = null;
-        } else {
-            try {
-                hash = new BID(blockId);
-            } catch (IllegalArgumentException e) {
-                throw new HLAPIException(e.getMessage());
-            }
-        }
-        // TODO this should be able to query for N blocks from a hash
-        HLAPIBlock block = api.getBlock(hash);
-        return BlockIdsRepresentation.create(block.getID(), block.getHeight(), block.getPreviousID());
-    }
-
-
 }

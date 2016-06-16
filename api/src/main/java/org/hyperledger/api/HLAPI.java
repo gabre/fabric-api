@@ -85,7 +85,7 @@ public interface HLAPI {
      * @return block or null if hash is unknown
      * @throws HLAPIException
      */
-    HLAPIBlock getBlock(BID hash) throws HLAPIException;
+    HLAPIBlock getBlock(long blockNum) throws HLAPIException;
 
     /**
      * Get the transaction identified by the hash, if it is on the current trunk (longest chain)

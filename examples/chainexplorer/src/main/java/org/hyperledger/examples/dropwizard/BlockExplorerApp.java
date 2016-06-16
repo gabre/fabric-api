@@ -15,14 +15,13 @@ package org.hyperledger.examples.dropwizard;
 
 import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
 import io.dropwizard.Application;
-import io.dropwizard.Bundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.hyperledger.api.HLAPI;
-import org.hyperledger.connector.GRPCClient;
+import org.hyperledger.api.connector.GRPCClient;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;

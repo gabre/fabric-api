@@ -21,12 +21,12 @@ import java.time.ZoneId;
 import java.util.Objects;
 
 public class HyperledgerHeader implements Header {
-    private BID ID;
+    private BID ID = BID.INVALID;
     private final BID previousID;
     private final MerkleRoot merkleRoot;
-    private final int createTime;
+    private final long createTime;
 
-    public HyperledgerHeader(BID previousID, MerkleRoot merkleRoot, int createTime) {
+    public HyperledgerHeader(BID previousID, MerkleRoot merkleRoot, long createTime) {
         this.previousID = previousID;
         this.merkleRoot = merkleRoot;
         this.createTime = createTime;
@@ -89,7 +89,7 @@ public class HyperledgerHeader implements Header {
      */
     @Override
     @Deprecated
-    public int getCreateTime() {
+    public long getCreateTime() {
         return createTime;
     }
 
@@ -98,7 +98,7 @@ public class HyperledgerHeader implements Header {
      */
     @Override
     public LocalTime getLocalCreateTime() {
-        return LocalTime.from(Instant.ofEpochSecond(Integer.toUnsignedLong(createTime)).atZone(ZoneId.of("Z")));
+        return LocalTime.from(Instant.ofEpochSecond(createTime).atZone(ZoneId.of("Z")));
     }
 
 

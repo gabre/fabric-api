@@ -22,10 +22,10 @@ import org.hyperledger.merkletree.MerkleRoot;
 import java.time.LocalTime;
 
 public class HLAPIHeader implements Header {
-    private final int height;
+    private final long height;
     private final Header header;
 
-    public HLAPIHeader(Header header, int height) {
+    public HLAPIHeader(Header header, long height) {
         this.header = header;
         this.height = height;
     }
@@ -50,7 +50,7 @@ public class HLAPIHeader implements Header {
         }
     }
 
-    public int getHeight() {
+    public long getHeight() {
         return height;
     }
 
@@ -72,7 +72,7 @@ public class HLAPIHeader implements Header {
 
     @Deprecated
     @Override
-    public int getCreateTime() {
+    public long getCreateTime() {
         return header.getCreateTime();
     }
 
