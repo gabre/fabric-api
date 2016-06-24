@@ -17,6 +17,7 @@
 package org.hyperledger.common;
 
 import org.hyperledger.api.*;
+import org.hyperledger.api.connector.ConsensusApiConnector;
 import org.hyperledger.block.BID;
 import org.hyperledger.block.Block;
 import org.hyperledger.block.Header;
@@ -24,11 +25,22 @@ import org.hyperledger.block.HyperledgerHeader;
 import org.hyperledger.merkletree.MerkleTree;
 import org.hyperledger.transaction.TID;
 import org.hyperledger.transaction.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import protos.ConsensusApiOuterClass.Payload;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 
 public class InMemoryBlockStore implements HLAPI {
+    private static final Logger log = LoggerFactory.getLogger(InMemoryBlockStore.class);
 
+    private final ConsensusApiConnector connector;
+
+    private final ReadWriteLock rwl = new ReentrantReadWriteLock();
     private final Map<BID, Block> blocks = new HashMap<>();
     private final Map<BID, byte[]> proofs = new HashMap<>();
     private final Map<BID, Integer> heights = new HashMap<>();
@@ -39,19 +51,41 @@ public class InMemoryBlockStore implements HLAPI {
     private final List<TransactionListener> txListeners = new ArrayList<>();
     private final List<TrunkListener> trunkListeners = new ArrayList<>();
 
+    public InMemoryBlockStore() {
+        connector = null;
+    }
+
+    public InMemoryBlockStore(String host, int port) {
+        Consumer<Payload> consensusResultConsumer = (Payload p) -> {
+            try {
+                addBlock(Block.fromByteArray(p.getPayload().toByteArray()), p.getProof().toByteArray());
+            } catch (HLAPIException e) {
+                log.error("Failed to add block: {}", e.getMessage());
+            } catch (IOException e) {
+                log.error("Failed to decode block: {}", e.getMessage());
+            }
+        };
+        connector = new ConsensusApiConnector(host, port, consensusResultConsumer);
+    }
+
     public void addBlock(Block block, byte[] proof) throws HLAPIException {
-        if (getChainHeight() == 0 || block.getPreviousID() == top) {
-            top = block.getID();
+        rwl.writeLock().lock();
+        try {
+            if (getChainHeight() == 0 || block.getPreviousID() == top) {
+                top = block.getID();
+            }
+            blocks.put(block.getID(), block);
+            proofs.put(block.getID(), proof);
+            heights.put(block.getID(), blocks.size());
+            for (Transaction tx : block.getTransactions()) {
+                mempool.remove(tx.getID());
+                txIndex.put(tx.getID(), block.getID());
+                notifyTransactionListeners(tx);
+            }
+            notifyTrunkListeners(block);
+        } finally {
+            rwl.writeLock().unlock();
         }
-        blocks.put(block.getID(), block);
-        proofs.put(block.getID(), proof);
-        heights.put(block.getID(), blocks.size());
-        for (Transaction tx : block.getTransactions()) {
-            mempool.remove(tx.getID());
-            txIndex.put(tx.getID(), block.getID());
-            notifyTransactionListeners(tx);
-        }
-        notifyTrunkListeners(block);
     }
 
     private void notifyTransactionListeners(Transaction tx) throws HLAPIException {
@@ -69,10 +103,15 @@ public class InMemoryBlockStore implements HLAPI {
     }
 
     public Block createBlock() {
-        List<Transaction> transactions = new ArrayList<>(mempool.values());
-        int time = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
-        Header header = new HyperledgerHeader(top, MerkleTree.computeMerkleRoot(transactions), time);
-        return new Block(header, transactions);
+        rwl.readLock().lock();
+        try {
+            List<Transaction> transactions = new ArrayList<>(mempool.values());
+            int time = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+            Header header = new HyperledgerHeader(top, MerkleTree.computeMerkleRoot(transactions), time);
+            return new Block(header, transactions);
+        } finally {
+            rwl.readLock().unlock();
+        }
     }
 
     @Override
@@ -102,14 +141,24 @@ public class InMemoryBlockStore implements HLAPI {
 
     @Override
     public int getChainHeight() throws HLAPIException {
-        return blocks.size();
+        rwl.readLock().lock();
+        try {
+            return blocks.size();
+        } finally {
+            rwl.readLock().unlock();
+        }
     }
 
     @Override
     public HLAPIHeader getBlockHeader(BID hash) throws HLAPIException {
-        return getOptionalBlock(hash)
-                .map(this::toHLAPIHeader)
-                .orElse(null);
+        rwl.readLock().lock();
+        try {
+            return getOptionalBlock(hash)
+                    .map(this::toHLAPIHeader)
+                    .orElse(null);
+        } finally {
+            rwl.readLock().unlock();
+        }
     }
 
     private Optional<Block> getOptionalBlock(BID hash) {
@@ -122,9 +171,14 @@ public class InMemoryBlockStore implements HLAPI {
 
     @Override
     public HLAPIBlock getBlock(BID hash) throws HLAPIException {
-        return getOptionalBlock(hash)
-                .map(this::toHLAPIBlock)
-                .orElse(null);
+        rwl.readLock().lock();
+        try {
+            return getOptionalBlock(hash)
+                    .map(this::toHLAPIBlock)
+                    .orElse(null);
+        } finally {
+            rwl.readLock().unlock();
+        }
     }
 
     private HLAPIBlock toHLAPIBlock(Block block) {
@@ -133,11 +187,16 @@ public class InMemoryBlockStore implements HLAPI {
 
     @Override
     public HLAPITransaction getTransaction(TID hash) throws HLAPIException {
-        return getOptionalTxBID(hash)
-                .flatMap(this::getOptionalBlock)
-                .map(b -> b.getTransaction(hash))
-                .map(this::toHLAPITransaction)
-                .orElse(null);
+        rwl.readLock().lock();
+        try {
+            return getOptionalTxBID(hash)
+                    .flatMap(this::getOptionalBlock)
+                    .map(b -> b.getTransaction(hash))
+                    .map(this::toHLAPITransaction)
+                    .orElse(null);
+        } finally {
+            rwl.readLock().unlock();
+        }
     }
 
     private Optional<BID> getOptionalTxBID(TID hash) {
@@ -150,7 +209,12 @@ public class InMemoryBlockStore implements HLAPI {
 
     @Override
     public void sendTransaction(Transaction transaction) throws HLAPIException {
-        mempool.put(transaction.getID(), transaction);
+        rwl.writeLock().lock();
+        try {
+            mempool.put(transaction.getID(), transaction);
+        } finally {
+            rwl.writeLock().unlock();
+        }
     }
 
     @Override
@@ -163,6 +227,7 @@ public class InMemoryBlockStore implements HLAPI {
 
     @Override
     public void sendBlock(Block block) throws HLAPIException {
+        connector.consentData(block.toByteArray());
     }
 
     @Override
