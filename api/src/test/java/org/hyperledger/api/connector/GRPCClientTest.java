@@ -15,8 +15,10 @@
  */
 package org.hyperledger.api.connector;
 
+import org.hyperledger.api.HLAPI;
 import org.hyperledger.api.HLAPIException;
 import org.hyperledger.api.HLAPITransaction;
+import org.hyperledger.common.InMemoryBlockStore;
 import org.hyperledger.transaction.TID;
 import org.hyperledger.transaction.Transaction;
 import org.hyperledger.transaction.TransactionBuilder;
@@ -30,11 +32,11 @@ import static org.junit.Assert.*;
 public class GRPCClientTest {
     private static final Logger log = LoggerFactory.getLogger(GRPCClientTest.class);
 
-    GRPCClient client;
+    HLAPI client;
 
     @Before
     public void setUp() {
-        client = new GRPCClient("localhost", 30303, 31315);
+        client = new InMemoryBlockStore("localhost", 30303);
     }
 
 
@@ -59,6 +61,7 @@ public class GRPCClientTest {
 
         int originalHeight = client.getChainHeight();
         client.sendTransaction(tx);
+        client.sendBlock(((InMemoryBlockStore)client).createBlock());
 
         Thread.sleep(1500);
 
