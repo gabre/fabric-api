@@ -1,9 +1,0 @@
-{
-    "namespace": "org.hyperledger.transaction",
-    "type": "record",
-    "name": "SerializedTransaction",
-    "fields": [
-        { "name": "payload",    "type": "bytes" },
-        { "name": "endorsers",  "type": { "type": "array", "items": "bytes" }}
-    ]
-}

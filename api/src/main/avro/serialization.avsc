@@ -1,0 +1,30 @@
+[
+{
+    "namespace": "org.hyperledger.transaction",
+    "type": "record",
+    "name": "SerializedTransaction",
+    "fields": [
+        { "name": "payload",    "type": "bytes" },
+        { "name": "endorsers",  "type": { "type": "array", "items": "bytes" }}
+    ]
+},
+{
+    "namespace": "org.hyperledger.transaction",
+    "type": "record",
+    "name": "SerializedHeader",
+    "fields": [
+        { "name": "previousId", "type": "bytes" },
+        { "name": "merkleRoot", "type": "bytes" },
+        { "name": "createTime", "type": "int" }
+    ]
+},
+{
+    "namespace": "org.hyperledger.transaction",
+    "type": "record",
+    "name": "SerializedBlock",
+    "fields": [
+        { "name": "header",        "type": "SerializedHeader" },
+        { "name": "transactions",  "type": { "type": "array", "items": "SerializedTransaction" }}
+    ]
+}
+]

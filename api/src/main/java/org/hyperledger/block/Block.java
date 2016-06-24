@@ -15,16 +15,21 @@
  */
 package org.hyperledger.block;
 
-import org.hyperledger.common.*;
+import org.hyperledger.common.Hash;
 import org.hyperledger.merkletree.MerkleRoot;
 import org.hyperledger.merkletree.MerkleTree;
 import org.hyperledger.merkletree.MerkleTreeNode;
-import org.hyperledger.transaction.Transaction;
+import org.hyperledger.transaction.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * A block of the ledger.
@@ -39,6 +44,8 @@ import java.util.List;
  * @see MerkleTreeNode
  */
 public class Block {
+    private static final Logger log = LoggerFactory.getLogger(Block.class);
+
     private final Header header;
     private List<? extends MerkleTreeNode> nodes;
     private List<Transaction> transactions;
@@ -220,5 +227,40 @@ public class Block {
     @Override
     public String toString() {
         return getID().toString();
+    }
+
+    public byte[] toByteArray() {
+        try {
+            return toByteArray(header, transactions);
+        } catch (IOException e) {
+            log.error("Failed to serialize Block: {}", e.getMessage());
+            return new byte[0];
+        }
+    }
+
+    public static byte[] toByteArray(Header header, List<Transaction> transactions) throws IOException {
+        List<SerializedTransaction> txs = transactions.stream()
+                .map(Transaction::toSerialized)
+                .collect(toList());
+
+        SerializedBlock b = SerializedBlock.newBuilder()
+                .setHeader(((HyperledgerHeader) header).toSerialized())
+                .setTransactions(txs)
+                .build();
+
+        return AvroSerializer.serialize(b);
+    }
+
+    public static Block fromByteArray(byte[] array) throws IOException {
+        SerializedBlock b = AvroSerializer.deserialize(array, SerializedBlock.getClassSchema());
+
+        List<Transaction> transactions = b.getTransactions().stream()
+                .map(Transaction::fromSerialized)
+                .collect(toList());
+
+        return new Builder()
+                .header(HyperledgerHeader.fromSerialized(b.getHeader()))
+                .transactions(transactions)
+                .build();
     }
 }

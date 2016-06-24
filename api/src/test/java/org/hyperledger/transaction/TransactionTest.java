@@ -33,18 +33,21 @@ public class TransactionTest {
 
     @Test
     public void serialization() throws IOException {
-        Transaction original = new TransactionBuilder()
-                .payload(randomBytes(100))
-                .endorsers(Collections.singletonList(new Endorser(randomBytes(32))))
-                .build();
-
+        Transaction original = randomTx();
         byte[] serialized = original.toByteArray();
         Transaction result = Transaction.fromByteArray(serialized);
 
         assertEquals(original.getID(), result.getID());
     }
 
-    private byte[] randomBytes(int length) {
+    public static Transaction randomTx() {
+        return new TransactionBuilder()
+                .payload(randomBytes(100))
+                .endorsers(Collections.singletonList(new Endorser(randomBytes(23))))
+                .build();
+    }
+
+    private static byte[] randomBytes(int length) {
         byte[] payload = new byte[length];
         new Random().nextBytes(payload);
         return payload;

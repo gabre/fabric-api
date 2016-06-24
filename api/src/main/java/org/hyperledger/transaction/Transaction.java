@@ -78,29 +78,34 @@ public class Transaction implements MerkleTreeNode {
 
     public byte[] toByteArray() {
         try {
-            return toByteArray(payload, endorsers);
+            return AvroSerializer.serialize(toSerialized());
         } catch (IOException e) {
             log.error("Failed to serialize transaction {}: {}", ID, e.getMessage());
             return new byte[0];
         }
     }
 
-    public static byte[] toByteArray(byte[] payload, List<Endorser> endorsers) throws IOException {
+    public SerializedTransaction toSerialized() {
+        return toSerialized(payload, endorsers);
+    }
+
+    public static SerializedTransaction toSerialized(byte[] payload, List<Endorser> endorsers) {
         List<ByteBuffer> endorserBytes = endorsers.stream()
                 .map(endorser -> ByteBuffer.wrap(endorser.getSignature()))
                 .collect(toList());
 
-        SerializedTransaction t = SerializedTransaction.newBuilder()
+        return SerializedTransaction.newBuilder()
                 .setPayload(ByteBuffer.wrap(payload))
                 .setEndorsers(endorserBytes)
                 .build();
-
-        return AvroSerializer.serialize(t);
     }
 
     public static Transaction fromByteArray(byte[] array) throws IOException {
         SerializedTransaction t = AvroSerializer.deserialize(array, SerializedTransaction.getClassSchema());
+        return fromSerialized(t);
+    }
 
+    public static Transaction fromSerialized(SerializedTransaction t) {
         List<Endorser> endorsers = t.getEndorsers().stream()
                 .map(endorser -> new Endorser(endorser.array()))
                 .collect(toList());

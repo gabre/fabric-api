@@ -15,14 +15,23 @@
  */
 package org.hyperledger.block;
 
+import org.hyperledger.common.Hash;
 import org.hyperledger.merkletree.MerkleRoot;
+import org.hyperledger.transaction.AvroSerializer;
+import org.hyperledger.transaction.SerializedHeader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Objects;
 
 public class HyperledgerHeader implements Header {
+    private static final Logger log = LoggerFactory.getLogger(HyperledgerHeader.class);
+
     private BID ID;
     private final BID previousID;
     private final MerkleRoot merkleRoot;
@@ -32,6 +41,8 @@ public class HyperledgerHeader implements Header {
         this.previousID = previousID;
         this.merkleRoot = merkleRoot;
         this.createTime = createTime;
+
+        ID = new BID(Hash.of(toByteArray()));
     }
 
     public static HyperledgerHeader.Builder create() {
@@ -121,5 +132,34 @@ public class HyperledgerHeader implements Header {
     @Override
     public String toString() {
         return getID().toString();
+    }
+
+    public SerializedHeader toSerialized() {
+        return toSerialized(previousID, merkleRoot, createTime);
+    }
+
+    public byte[] toByteArray() {
+        try {
+            return AvroSerializer.serialize(toSerialized());
+        } catch (IOException e) {
+            log.error("Failed to serialize HyperledgerHeader: {}", e.getMessage());
+            return new byte[0];
+        }
+    }
+
+    public static SerializedHeader toSerialized(BID previousID, MerkleRoot merkleRoot, int createTime) {
+        return SerializedHeader.newBuilder()
+                .setPreviousId(ByteBuffer.wrap(previousID.toByteArray()))
+                .setMerkleRoot(ByteBuffer.wrap(merkleRoot.toByteArray()))
+                .setCreateTime(createTime)
+                .build();
+    }
+
+    public static HyperledgerHeader fromSerialized(SerializedHeader h) throws IOException {
+        return new Builder()
+                .previousID(new BID(h.getPreviousId().array()))
+                .merkleRoot(new MerkleRoot(h.getMerkleRoot().array()))
+                .createTime(h.getCreateTime())
+                .build();
     }
 }
