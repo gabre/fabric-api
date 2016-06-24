@@ -199,6 +199,18 @@ public class Block {
     }
 
     /**
+     * Finds transaction in the block by ID
+     *
+     * @param txId ID of the transaction
+     * @return
+     */
+    public Transaction getTransaction(TID txId) {
+        return transactions.stream()
+                .filter(tx -> tx.getID() == txId)
+                .findFirst().get();
+    }
+
+    /**
      * Merkle tree nodes in the block. Nodes might be transactions or merkle tree nodes that were computed
      * out of transactions already pruned.
      *
