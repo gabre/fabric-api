@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import protos.ConsensusApiGrpc;
 import protos.ConsensusApiGrpc.ConsensusApiBlockingStub;
 import protos.ConsensusApiGrpc.ConsensusApiStub;
+import protos.ConsensusApiOuterClass;
 import protos.ConsensusApiOuterClass.Dummy;
 import protos.ConsensusApiOuterClass.Payload;
 
@@ -43,11 +44,10 @@ public class ConsensusApiConnector {
     }
 
     private void setUpConsensusStream(Consumer<Payload> callback) {
-        ConsensusApiBlockingStub blockingStub = ConsensusApiGrpc.newBlockingStub(channel);
-        Dummy dummy = Dummy.newBuilder().setSuccess(true).build();
-        stub.getConsensusStream(dummy, new StreamObserver<Payload>() {
+        StreamObserver<Payload> a = stub.getConsensusStream(new StreamObserver<Payload>() {
             @Override
             public void onNext(Payload payload) {
+                log.warn("New consensus");
                 callback.accept(payload);
             }
 

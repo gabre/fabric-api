@@ -206,7 +206,7 @@ public class Block {
      */
     public Transaction getTransaction(TID txId) {
         return transactions.stream()
-                .filter(tx -> tx.getID() == txId)
+                .filter(tx -> tx.getID().equals(txId))
                 .findFirst().get();
     }
 

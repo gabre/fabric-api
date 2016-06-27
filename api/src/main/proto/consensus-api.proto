@@ -4,7 +4,7 @@ package protos;
 
 service ConsensusApi {
     rpc ConsentData (Payload) returns (Dummy);
-    rpc GetConsensusStream (Dummy) returns (stream Payload);
+    rpc GetConsensusStream (stream Payload) returns (stream Payload);
 }
 
 message Payload {

@@ -63,9 +63,10 @@ public class GRPCClientTest {
         client.sendTransaction(tx);
         client.sendBlock(((InMemoryBlockStore)client).createBlock());
 
-        Thread.sleep(1500);
+        Thread.sleep(3500);
 
         HLAPITransaction res = client.getTransaction(tx.getID());
+
         assertEquals(tx.getID(), res.getID());
         assertArrayEquals(tx.getPayload(), res.getPayload());
         int newHeight = client.getChainHeight();
